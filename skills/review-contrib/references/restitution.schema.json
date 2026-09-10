@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "restitution.json — la matière du digest décisionnel (§10)",
+  "description": "Écrit par la session d'audit, à côté de audit.md. Rendu par digest.mjs en un mail COURT (les puces de `synthese` et la recommandation, rien d'autre) + une page HTML jointe qui porte tout le détail. Le modèle écrit la MATIÈRE, le script écrit la FORME : n'y mets aucun HTML, aucun markdown, aucune couleur. LES LONGUEURS MAXIMALES SONT DES BUDGETS DE LECTURE, pas des suggestions : le lecteur n'a pas le contexte du dépôt et lit vite. Une phrase qui déborde se coupe, elle ne se rallonge jamais.",
+  "type": "object",
+  "required": [
+    "repo",
+    "pr",
+    "verdict",
+    "titre_clair",
+    "synthese",
+    "en_une_phrase",
+    "pourquoi_ca_compte",
+    "recommandation",
+    "defauts",
+    "apports",
+    "captures",
+    "a_trancher",
+    "jargon",
+    "non_verifie"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "repo": {
+      "type": "string",
+      "description": "slug du dépôt, ex. mon-projet"
+    },
+    "pr": {
+      "type": "integer"
+    },
+    "tour": {
+      "type": "integer",
+      "description": "1 au premier audit, +1 à chaque re-poussée"
+    },
+    "auteur": {
+      "type": "string",
+      "description": "prénom nom, lisible — pas un identifiant GitHub"
+    },
+    "verdict": {
+      "enum": [
+        "bloquant",
+        "reserves",
+        "mergeable",
+        "non_conclu"
+      ],
+      "description": "non_conclu quand l'audit n'a PAS pu mesurer l'essentiel (banc en panne, règle sans source). Ne jamais mettre mergeable par défaut."
+    },
+    "titre_clair": {
+      "type": "string",
+      "maxLength": 70,
+      "description": "Ce que fait la PR, en français. Pas le sujet du commit."
+    },
+    "en_une_phrase": {
+      "type": "string",
+      "description": "L'intention, du point de vue de l'utilisateur de l'app. UNE phrase, pas deux.",
+      "maxLength": 160
+    },
+    "pourquoi_ca_compte": {
+      "type": "string",
+      "description": "Ce que ça change pour un client / un dossier. Deux phrases au maximum. Si ça ne change rien pour l'utilisateur, le dire en une ligne.",
+      "maxLength": 260
+    },
+    "ampleur": {
+      "type": "object",
+      "description": "De quoi jauger le poids de la contribution sans lire un diff.",
+      "properties": {
+        "fichiers": {
+          "type": "integer"
+        },
+        "lignes_ajoutees": {
+          "type": "integer"
+        },
+        "lignes_supprimees": {
+          "type": "integer"
+        },
+        "commits": {
+          "type": "integer"
+        },
+        "retard_sur_base": {
+          "type": "string",
+          "description": "ex. « 4 commits de retard sur main » — en mots, pas en jargon git"
+        }
+      }
+    },
+    "recommandation": {
+      "type": "object",
+      "required": [
+        "action",
+        "en_clair"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Un verbe à l'impératif : « Ne pas merger », « Merger après correction de B1 », « Merger tel quel »."
+        },
+        "en_clair": {
+          "type": "string",
+          "description": "Pourquoi, en UNE ou DEUX phrases courtes.",
+          "maxLength": 180
+        },
+        "effort": {
+          "type": "string",
+          "description": "Ordre de grandeur : « 10 min », « 1 h côté Antoine », « une demi-journée »."
+        },
+        "qui": {
+          "type": "string",
+          "description": "Qui fait le geste : le contributeur, toi, ou à trancher ensemble."
+        }
+      }
+    },
+    "defauts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "gravite",
+          "ou_en_clair",
+          "symptome",
+          "consequence",
+          "correction"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[BIM][0-9]+$",
+            "description": "Identifiant STABLE, repris d'un tour à l'autre, jamais renuméroté."
+          },
+          "gravite": {
+            "enum": [
+              "bloquant",
+              "important",
+              "mineur"
+            ]
+          },
+          "statut": {
+            "enum": [
+              "ouvert",
+              "corrige",
+              "conteste",
+              "reporte",
+              "a_trancher"
+            ],
+            "default": "ouvert"
+          },
+          "ou_en_clair": {
+            "type": "string",
+            "description": "L'endroit vu par l'utilisateur : « l'écran de rémunération », pas « src/lib/remuneration.js ».",
+            "maxLength": 90
+          },
+          "symptome": {
+            "type": "string",
+            "description": "Ce qu'on VOIT, avec des chiffres mesurés : « 65 000 € affichés au lieu de 100 000 € ». Une phrase. Le raisonnement va dans audit.md, pas ici.",
+            "maxLength": 200
+          },
+          "consequence": {
+            "type": "string",
+            "description": "Ce que ça coûte, en métier.",
+            "maxLength": 150
+          },
+          "correction": {
+            "type": "string",
+            "description": "Le geste qui règle le problème.",
+            "maxLength": 150
+          },
+          "fichier": {
+            "type": "string",
+            "description": "fichier:ligne — affiché en petit, pour la reprise technique."
+          },
+          "capture": {
+            "type": "string",
+            "description": "nom de fichier dans captures/, si une image montre le défaut"
+          }
+        }
+      }
+    },
+    "apports": {
+      "type": "array",
+      "description": "Ce qu'il faut garder, MÊME si le verdict est « ne pas merger ».",
+      "items": {
+        "type": "object",
+        "required": [
+          "titre",
+          "en_clair"
+        ],
+        "properties": {
+          "titre": {
+            "type": "string"
+          },
+          "en_clair": {
+            "type": "string",
+            "maxLength": 150
+          },
+          "capture": {
+            "type": "string"
+          }
+        }
+      },
+      "maxItems": 5
+    },
+    "captures": {
+      "type": "array",
+      "maxItems": 4,
+      "description": "Écrans de l'app EN TRAIN DE TOURNER sur la branche. Jamais de maquette, jamais d'image inventée. Vide + explication dans non_verifie[] si le banc n'a pas démarré ou si la PR ne touche pas l'interface.",
+      "items": {
+        "type": "object",
+        "required": [
+          "fichier",
+          "legende",
+          "ce_qu_il_faut_regarder"
+        ],
+        "properties": {
+          "fichier": {
+            "type": "string",
+            "description": "chemin relatif, ex. captures/01-remuneration-apres.png"
+          },
+          "legende": {
+            "type": "string",
+            "maxLength": 140,
+            "description": "Ce qu'on voit, en une phrase. Pas de récit."
+          },
+          "ce_qu_il_faut_regarder": {
+            "type": "string",
+            "description": "Où poser l'œil : le mainteneur ne cherchera pas l'écart tout seul.",
+            "maxLength": 160
+          },
+          "moment": {
+            "enum": [
+              "avant",
+              "apres",
+              "unique"
+            ],
+            "default": "unique",
+            "description": "avant = la base sans la PR, apres = la branche"
+          }
+        }
+      }
+    },
+    "a_trancher": {
+      "type": "array",
+      "description": "Les questions qu'aucun audit ne peut trancher : arbitrage produit, choix de règle, priorité.",
+      "items": {
+        "type": "object",
+        "required": [
+          "question",
+          "mon_avis"
+        ],
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mon_avis": {
+            "type": "string",
+            "description": "Un avis motivé. « À toi de voir » n'en est pas un.",
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "jargon": {
+      "type": "array",
+      "description": "Chaque terme technique employé dans ce fichier, avec sa définition en une phrase. Un mot non défini ne doit pas apparaître ailleurs.",
+      "items": {
+        "type": "object",
+        "required": [
+          "terme",
+          "definition"
+        ],
+        "properties": {
+          "terme": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string",
+            "maxLength": 140
+          }
+        }
+      }
+    },
+    "non_verifie": {
+      "type": "array",
+      "description": "Ce que l'audit n'a PAS pu mesurer, et pourquoi. Un silence se lit comme un « tout va bien ».",
+      "items": {
+        "type": "string",
+        "maxLength": 200
+      },
+      "maxItems": 5
+    },
+    "synthese": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "description": "CE QU'IL FAUT RETENIR, 2 à 4 puces. C'est le SEUL contenu du corps du mail : le reste vit dans la pièce jointe. Chaque puce se suffit à elle-même, sans jargon, sans renvoi à une autre puce. Une puce = un fait ou une conséquence, pas un préambule.",
+      "items": {
+        "type": "string",
+        "maxLength": 110
+      }
+    }
+  }
+}
