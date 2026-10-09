@@ -174,6 +174,12 @@ Trois choses à savoir sans ouvrir le fichier, parce qu'elles évitent un dégâ
    d'hébergeur.
 3. **Un mécanisme qui démarre un process vérifie qu'il tourne** — et sur le bon horizon : 2 s
    prouvent le démarrage, pas la survie.
+4. **Une chaîne qui tombe se relève seule** (18/09/2026). Le superviseur de `next.sh` ne
+   rattrapait que la limite de session ; il rattrape désormais aussi la chute en plein step —
+   `STATE: RUNNING` avec zéro session — sous grâce de 60 s, double relevé et budget de reprises.
+   Contre-épreuve : `bash ~/.claude/skills/handoff/scripts/test-reprise-mort-inopinee.sh`
+   (4 cas, il mord sur la chute et se tait sur les trois arrêts volontaires). À rejouer après
+   toute retouche du superviseur.
 
 ## Commandes (roadmap)
 - `roadmap init [--title ..] [--objectif ..] [--branch ..] [--gate ..] [--step ..] [--force]` — scaffold le kit dans `scripts/roadmap/`.

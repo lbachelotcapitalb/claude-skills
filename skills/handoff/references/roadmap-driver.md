@@ -390,9 +390,25 @@ Ce qui a changé, et pourquoi chaque point est nécessaire :
 | Il porte une **étiquette de machine** (`--label`, sinon `hostname -s`) | « chaîne morte » sans savoir laquelle des deux machines |
 | Un armement raté **n'arrête pas le lancement, mais le DIT** | silence + échec : la combinaison exacte qui a coûté les 20 h |
 
-Reste ouvert : le watchdog **crie**, il ne **reprend** pas. La reprise datée existe déjà pour la
-seule panne qui annonce sa levée (limite de session, cf. le superviseur de `next.sh`) ; pour tout
-le reste, l'arbitrage reste humain — donc une notification, pas une relance automatique.
+Le watchdog **crie**, il ne **reprend** pas — et c'est le superviseur de `next.sh` qui reprend,
+désormais dans DEUX cas et non plus un seul (18/09/2026) :
+
+| Mort de la fille | Qui la voit | Ce qui se passe |
+|---|---|---|
+| **limite de session** (annonce sa levée) | superviseur, sur la dernière ligne du log | attente jusqu'à l'heure annoncée + 3 min, puis reprise |
+| **chute en plein step** (aucun message) | superviseur, en constatant qu'aucune fille n'a pris la main | grâce de 60 s, double relevé, puis reprise immédiate |
+| arrêt volontaire (`BLOCKED`, `DONE`, `STOPPED`) | les deux | rien — et pas de bruit |
+
+Le second cas manquait, et le trou était exactement entre les deux gardes : le superviseur ne
+reprenait que sur limite, le watchdog ne reprenait jamais. Une session éteinte en attendant la
+sortie d'un gate laissait donc `STATE: RUNNING` avec zéro session, jusqu'à ce qu'un humain dise
+« relance » (mesuré sur `app-notes-de-frais`, P7, le 18/09/2026 : le watchdog a bien notifié
+« CHAÎNE MORTE » à 14:06, personne n'a repris).
+
+Ce qui reste vrai : **le budget plafonne** (`ROADMAP_RESUME_LEFT`, 4 par défaut), et une fille qui
+meurt aussitôt ne boucle pas — la dernière reprise le DIT au lieu de s'éteindre en silence. Et ce
+qui reste humain : une chaîne qui `BLOCKED` sur une décision. Reprendre une décision n'est pas
+rattraper une panne.
 
 **`stop` et `status` visent `claude -p` + le répertoire du dépôt — jamais un fichier PID.**
 Le pid écrit par `next.sh` avait d'abord été pris pour la cible fiable ; il ne l'est pas, parce

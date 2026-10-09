@@ -632,10 +632,20 @@ function cmdRoadmapLaunch(root, cfg, flags) {
   // Pousser la branche sur origin pour que le VPS la récupère (jamais forcé : branche de travail réelle).
   // En local, la cible EST ce dépôt — le push ne transporte rien, il ne sert que de sauvegarde ;
   // on ne meurt donc pas s'il échoue (pas de remote, dépôt hors ligne), on le signale.
+  // RELANCER, C'EST REPARTIR DE CE QUE LA CIBLE A POUSSÉ (18/09/2026). Une chaîne qui tourne
+  // pousse à chaque step : au bout d'une heure, le clone d'où l'on relance est en retard de
+  // vingt commits. Le push partait donc en `! [rejected] (fetch first)` et `launch` mourait en
+  // demandant de « résoudre en local » — la relance butait sur sa propre mécanique, au pire
+  // moment, celui où la chaîne est déjà à terre. On s'aligne d'abord, en fast-forward SEUL :
+  // s'il y a une vraie divergence (du travail local inédit), le ff échoue et on meurt comme
+  // avant — c'est un arbitrage humain, pas un cas à forcer.
   info(`Pousse ${branch} sur origin…`);
+  try { sh(`git fetch origin ${branch}`); } catch { /* pas de remote / hors ligne : le push tranchera */ }
+  try { sh(`git merge --ff-only origin/${branch}`); info(`   aligné en fast-forward sur origin/${branch}`); }
+  catch { /* déjà à jour, en avance, ou divergent : le push dira laquelle */ }
   try { shLoud(`git push origin ${branch}`); }
   catch {
-    if (!flags.local) die(`git push origin ${branch} a échoué (divergence ?). Résous en local avant de lancer.`);
+    if (!flags.local) die(`git push origin ${branch} a échoué.\n   Le fast-forward sur origin/${branch} n'a pas suffi : la branche locale a des commits que le distant n'a pas ET inversement.\n   Résous la divergence en local (rebase) avant de relancer.`);
     console.error(`   ⚠️  push impossible — la chaîne locale démarrera quand même (elle travaille sur ce dépôt).`);
   }
   // En local, un arbre sale n'est pas un détail : la première session commite ce qu'elle trouve,
@@ -680,7 +690,7 @@ function cmdRoadmapLaunch(root, cfg, flags) {
     // s'authentifie couramment par un `CLAUDE_CODE_OAUTH_TOKEN` de longue durée, rangé dans un
     // `.env` que les crons sourcent : `~/.claude/.credentials.json` n'y existe alors PAS, et la
     // sonde déclarait « NON authentifié » une machine qui répondait `PONG` à un vrai aller-retour
-    // (mesuré le 03/09/2026 sur un VPS Linux, quatrième piège de portabilité de la famille
+    // (mesuré le 03/09/2026 sur le VPS b-capital, quatrième piège de portabilité de la famille
     // `setsid` / `/proc` / trousseau macOS). On lit donc AUSSI ce jeton — et on le SOURCE, parce
     // qu'il ne suffit pas de le constater : les sessions détachées héritent de cet environnement,
     // sans quoi la chaîne partirait sans identité et `claude -p` refuserait avec le CODE 0.

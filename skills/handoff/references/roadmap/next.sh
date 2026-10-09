@@ -23,6 +23,14 @@
 # rend `You've hit your session limit · resets 5pm (UTC)` et meurt. Le premier garde la déclarait
 # vivante, next.sh imprimait « session fraîche relancée » et la chaîne mourait en silence — 20 h,
 # alors que le compte redevenait disponible 55 minutes plus tard.
+#
+# LE SUPERVISEUR NE REPREND PLUS SEULEMENT SUR LA LIMITE (18/09/2026). Il ne rattrapait que la
+# panne qui ANNONCE sa levée, au motif qu'une mort sans message signifiait « relayée ou arrêtée
+# proprement ». Faux : une session peut s'éteindre en plein step — en attendant la sortie d'un
+# gate, par exemple — sans poser d'état d'arrêt ni détacher de fille. STATE reste RUNNING, zéro
+# session tourne, et seul le watchdog le voyait : or il crie, il ne reprend pas. Le superviseur
+# distingue donc maintenant le relais normal (une fille a pris la main) de la chute (personne),
+# et relance dans le second cas — sous fenêtre de grâce, double relevé et budget.
 set -euo pipefail
 
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -34,7 +42,7 @@ MODEL="${ROADMAP_MODEL:-opus}"
 CTXMAX="${ROADMAP_CTX_MAX:-140000}"
 BINPROP="${ROADMAP_CLAUDE_BIN:-}"
 # L'IDENTITÉ NE S'HÉRITE PAS TOUJOURS — elle se RELIT à chaque relais.
-# Mesuré le 03/09/2026 (sur un VPS Linux) : la 1re session, lancée avec CLAUDE_CODE_OAUTH_TOKEN dans
+# Mesuré le 03/09/2026 (VPS b-capital) : la 1re session, lancée avec CLAUDE_CODE_OAUTH_TOKEN dans
 # son environnement, a fait tout son step ; sa FILLE est morte au premier tour sur
 # « Not logged in · Please run /login », log de 46 Ko, STATE resté RUNNING. Un jeton
 # d'ENVIRONNEMENT ne traverse pas l'outil Bash de la session mère : hériter n'est pas relire.
@@ -119,9 +127,44 @@ if [ "${1:-}" = "--superviser" ]; then
   # calquée sur un échantillon ne garde que cet échantillon : on reconnaît donc « (tu) as atteint
   # ta … limite », quel que soit le mot du milieu, et on garde les formes nommées en filet.
   DERNIERE="$(grep -v '^[[:space:]]*$' "$FILLE_LOG" 2>/dev/null | tail -1 || true)"
-  printf '%s' "$DERNIERE" \
-    | grep -qiE "(hit|reached) your [a-z0-9 -]{0,24}limit|(session|usage|weekly|daily|monthly|rate) limit" \
-    || exit 0
+  if printf '%s' "$DERNIERE" \
+    | grep -qiE "(hit|reached) your [a-z0-9 -]{0,24}limit|(session|usage|weekly|daily|monthly|rate) limit"
+  then
+    MOTIF="limite de session"
+  else
+    # ---- MORT INOPINÉE (18/09/2026) ------------------------------------------------------
+    # Ici, la fille est morte SANS annoncer de limite. La première version concluait « mort
+    # ordinaire → rien », sur la prémisse que la chaîne s'était forcément soit relayée, soit
+    # arrêtée proprement. **La prémisse est fausse**, et app-notes-de-frais l'a montré le
+    # 18/09 : la session s'est éteinte en attendant la sortie de `npm run audit`, sans poser
+    # d'état d'arrêt et sans détacher de fille. STATE est resté RUNNING avec zéro session, et
+    # la chaîne est restée par terre jusqu'à ce qu'un humain dise « relance ».
+    #
+    # Le watchdog voit exactement cet état — il l'a même notifié — mais il CRIE, il ne REPREND
+    # pas. Entre un superviseur qui ne reprend que sur limite et un garde qui ne reprend jamais,
+    # une mort en plein step ne réveillait personne. C'est ce trou qu'on ferme.
+    #
+    # Trois gardes, parce que reprendre à tort est pire que ne pas reprendre :
+    #   1. la FENÊTRE DE RELAIS. Entre la fille qui finit son step et celle que next.sh détache,
+    #      il existe quelques secondes sans aucun `claude -p` : conclure tout de suite ferait
+    #      démarrer une session concurrente à CHAQUE relais. On attend, puis on vérifie DEUX
+    #      fois espacées — même doctrine que les deux relevés du watchdog.
+    #   2. l'ÉTAT. Un arrêt volontaire (BLOCKED, DONE, STOPPED) ne se rattrape pas.
+    #   3. le BUDGET. Une fille qui meurt aussitôt relancerait à l'infini : ROADMAP_RESUME_LEFT
+    #      plafonne, et la dernière reprise le dit au lieu de s'éteindre en silence.
+    ATTENTE_RELAIS="${ROADMAP_RELAY_GRACE:-60}"
+    sleep "$ATTENTE_RELAIS"
+    if chaine_vivante; then exit 0; fi          # relais normal : la fille suivante a pris la main
+    sleep "$(( ATTENTE_RELAIS / 2 ))"
+    if chaine_vivante; then exit 0; fi          # 2e relevé — un seul suffirait à crier à tort
+    if etat_non_relancable; then exit 0; fi     # arrêt volontaire : rien à rattraper, et pas de bruit
+    if [ "$RESTANTS" -le 0 ]; then
+      notifier "chaîne MORTE en plein step et budget de reprises épuisé → elle reste à l'arrêt"
+      exit 0
+    fi
+    notifier "chaîne morte en plein step (sans limite annoncée) — reprise immédiate (il restera $((RESTANTS - 1)) reprise(s))"
+    ROADMAP_RESUME_LEFT="$((RESTANTS - 1))" exec "$SELF"
+  fi
 
   if etat_non_relancable; then
     notifier "chaîne arrêtée sur limite de session, mais STATE n'est plus RUNNING → pas de reprise"

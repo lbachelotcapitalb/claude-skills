@@ -121,6 +121,42 @@ Garde-fous non négociables :
   maître plusieurs fois (récup + rebuild + deploy…), fournis la **clé de cache** et suggère une
   durée dès la 1ʳᵉ fenêtre → UNE seule saisie pour toute la séquence, au lieu de N fenêtres.
 
+## ⛔ Un secret TAPÉ dans la fenêtre se RANGE au coffre — passage strict (20/09/2026)
+
+**Symptôme** : l'utilisateur crée un jeton d'API, le tape dans la fenêtre masquée, et le considère comme
+**enregistré**. Deux heures plus tard, on le cherche dans Bitwarden : il n'y est pas. Il a vécu
+en RAM, il mourra avec le TTL, et il faudra le recréer — un jeton de plus dans le dashboard,
+sans expiration, que personne ne révoquera.
+
+**Cause racine** : ce skill était écrit pour la SAISIE (ne pas faire transiter un secret par le
+chat) et s'arrêtait là. Rien n'y disait où le secret doit VIVRE ensuite. La RAM est un cache,
+pas un rangement : elle n'a ni inventaire, ni note de portée, ni date de révocation.
+
+**Règle, sans exception** : dès qu'une valeur tapée dans la fenêtre est **durable et
+réutilisable** — jeton d'API, clé de service, mot de passe d'un compte tiers —, elle est
+**créée dans le coffre DANS LE MÊME TOUR**, avant d'être utilisée pour autre chose. On ne
+demande pas la permission : ranger un secret est le geste attendu, pas une option.
+
+Ce qui reste en RAM SEULEMENT, et n'a rien à faire au coffre : les secrets **maîtres**
+(passphrase Bitwarden, passphrase d'un coffre applicatif — règle d'or ci-dessus), et les
+valeurs **jetables** (un code à usage unique, un OTP).
+
+**Comment ranger dans le bon coffre** — `vault-add.mjs` vise le coffre PERSO et ne sait pas
+réutiliser une valeur déjà en RAM. Pour le coffre **commun French Mac**, créer l'entrée
+directement, la valeur prise dans l'agent (donc jamais retapée) et le JSON passé **sur stdin**
+(jamais en argv : `bw create item <base64>` exposerait le secret dans `ps`) :
+
+```bash
+export BITWARDENCLI_APPDATA_DIR=~/.bw-<second-coffre>   # sinon c'est le coffre par défaut
+SESSION="$(node ~/Documents/Claude/Projects/cartographie-it/bw-unlock.mjs --print-session)"
+VAL="$(~/.claude/skills/autocli-password/scripts/ask-secret.sh "…" "…" <clé-RAM>)"   # cache HIT
+VAL="$VAL" python3 -c '…json…' | bw create item --session "$SESSION"   # base64 sur STDIN
+```
+
+**La note de l'entrée porte ce que la valeur ne dit pas** : quel COMPTE (ici
+`contact@example.com`, pas le compte perso), quelle PORTÉE exacte, s'il y a une EXPIRATION, et où
+le révoquer. Un jeton sans portée écrite est un jeton que personne n'osera supprimer.
+
 ## Registre des clés canoniques — n'en invente jamais une nouvelle
 
 Un secret maître réutilisable a **une seule** clé de cache, stable, réutilisée partout. Deux noms
@@ -201,7 +237,7 @@ Donne à l'outil Bash un **timeout généreux** (≈ 180 s) sur la commande qui 
 ## Avant de prompter : le secret a-t-il déjà un agent/cache natif ?
 
 Leçon (22/07/2026) : passphrase SSH VPS re-demandée en fenêtre alors qu'elle est **déjà dans le
-Keychain macOS** (posée là par l'utilisateur, cf. la mémoire-pièges du projet concerné). Règle actionnable — pour une
+Keychain macOS** (posée là par l'utilisateur, cf. mémoire GTMAdvisory 16/07). Règle actionnable — pour une
 **clé SSH**, avant toute fenêtre : `ssh-add --apple-load-keychain` (recharge sans rien demander),
 et seulement si ça ne charge rien → fenêtre masquée puis `ssh-add --apple-use-keychain` (le
 Keychain est l'exception validée pour CETTE passphrase ; la doctrine « jamais sur disque » vaut
