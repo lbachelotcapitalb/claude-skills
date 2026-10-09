@@ -17,8 +17,8 @@ set -u
 
 DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 NAME="$(basename -- "$DIR")"
-RAW="${SKILL_UPDATE_REPO:-https://raw.githubusercontent.com/lbachelotcapitalb/leo-bachelot-ia-skills/main}"
-WEB="https://github.com/lbachelotcapitalb/leo-bachelot-ia-skills"
+RAW="${SKILL_UPDATE_REPO:-https://raw.githubusercontent.com/lbachelotcapitalb/claude-skills/main}"
+WEB="https://github.com/lbachelotcapitalb/claude-skills"
 SEMVER='^[0-9]+\.[0-9]+\.[0-9]+$'
 
 if [ "${SKILL_UPDATE_CHECK:-on}" = "off" ]; then
