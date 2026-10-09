@@ -117,7 +117,7 @@ capture en plus **sans personne devant l'écran**, donc :
 
 ### 10.5 Ce que le rendu fait de ce fichier
 
-Côté veille (`~/claude-config/scripts/veille-pr/`), deux rendus tirés du même fichier :
+Côté veille (`<dépôt-de-config>/scripts/veille-pr/`), deux rendus tirés du même fichier :
 
 - `rendu-mail.mjs` → le **corps du mail** : verdict, puces de `synthese`, recommandation, effort.
   Rien d'autre. Pas d'image, pas de tableau, pas de section repliée.

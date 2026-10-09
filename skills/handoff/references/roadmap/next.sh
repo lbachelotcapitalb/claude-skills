@@ -42,7 +42,7 @@ MODEL="${ROADMAP_MODEL:-opus}"
 CTXMAX="${ROADMAP_CTX_MAX:-140000}"
 BINPROP="${ROADMAP_CLAUDE_BIN:-}"
 # L'IDENTITÉ NE S'HÉRITE PAS TOUJOURS — elle se RELIT à chaque relais.
-# Mesuré le 03/09/2026 (VPS b-capital) : la 1re session, lancée avec CLAUDE_CODE_OAUTH_TOKEN dans
+# Mesuré le 03/09/2026 (sur un VPS distant) : la 1re session, lancée avec CLAUDE_CODE_OAUTH_TOKEN dans
 # son environnement, a fait tout son step ; sa FILLE est morte au premier tour sur
 # « Not logged in · Please run /login », log de 46 Ko, STATE resté RUNNING. Un jeton
 # d'ENVIRONNEMENT ne traverse pas l'outil Bash de la session mère : hériter n'est pas relire.

@@ -48,7 +48,7 @@ la clé manque · témoin stderr `cache RAM HIT` quand aucune fenêtre ne s'ouvr
 sous-commandes `has` et `keys`.
 
 **5ᵉ cause, trouvée le 09/08 — la clé se perdait dans un script INTERMÉDIAIRE.** `bw-unlock.mjs`,
-`bw-get.mjs` et `vault-connect.mjs` (dépôt `cartographie-it`) appelaient `ask-secret.sh` avec
+`bw-get.mjs` et `vault-connect.mjs` (dépôt de l'outillage coffre) appelaient `ask-secret.sh` avec
 **deux arguments**. Symptôme à reconnaître : **deux fenêtres dans une seule commande** — la mienne
 (avec `bw-master`, qui mémorise), puis celle du script (sans clé, qui ne lit pas ce que je viens de
 mémoriser), séparées de ~20 s. Sonder `has` avant ne protège de rien dans ce cas : la sonde répond

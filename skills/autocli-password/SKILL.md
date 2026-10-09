@@ -148,7 +148,7 @@ directement, la valeur prise dans l'agent (donc jamais retapée) et le JSON pass
 
 ```bash
 export BITWARDENCLI_APPDATA_DIR=~/.bw-<second-coffre>   # sinon c'est le coffre par défaut
-SESSION="$(node ~/Documents/Claude/Projects/cartographie-it/bw-unlock.mjs --print-session)"
+SESSION="$(node ~/path/to/vault-tools/bw-unlock.mjs --print-session)"
 VAL="$(~/.claude/skills/autocli-password/scripts/ask-secret.sh "…" "…" <clé-RAM>)"   # cache HIT
 VAL="$VAL" python3 -c '…json…' | bw create item --session "$SESSION"   # base64 sur STDIN
 ```
@@ -224,7 +224,7 @@ commande échoue sur un secret invalide, oublie-le avant de retenter :
 
 ```bash
 SKILL=~/.claude/skills/autocli-password
-cd ~/Documents/Claude/Projects/cartographie-it \
+cd ~/path/to/vault-tools \
   && APP_VAULT_PASS="$("$SKILL/scripts/ask-secret.sh" "Passphrase du coffre app (rebuild chiffré)" "app-vault · rebuild")" \
        node app-sync.mjs rebuild \
   ; unset APP_VAULT_PASS

@@ -10,11 +10,19 @@ not re-derived at every deck generation):
 Also: the 4-paragraph "Fixed-Stage Policy" boilerplate is replaced by a short
 note saying the translation it asks for has already been done.
 """
-import json, re, shutil, sys
+import json, os, re, shutil, sys
 from pathlib import Path
 
-SRC = Path.home() / "Documents/Claude/Projects/deck-html/ref-frontend-slides"
+# Source du lot de modèles à importer. Pas de chemin de machine en dur : ce script est
+# publié dans la vitrine, et un chemin de projet nomme la disposition d'un poste privé.
+# Passe le dossier en argument, ou via DECK_REF_SRC.
+SRC = Path(sys.argv[1] if len(sys.argv) > 1 else
+           os.environ.get("DECK_REF_SRC", "")).expanduser()
 DST = Path.home() / ".claude/skills/deck-builder/assets/templates"
+
+if not SRC.name or not SRC.is_dir():
+    sys.exit("usage: import-templates.py <dossier-des-modeles-source>  "
+             "(ou DECK_REF_SRC=...) — aucun chemin par défaut : il nommerait un poste.")
 
 VW, VH, REM = 19.2, 10.8, 16.0
 

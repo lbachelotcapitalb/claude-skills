@@ -161,7 +161,7 @@ published.
 ```bash
 cd ~/visual-lab
 # Pexels — contemporary editorial photography. Key lives in Bitwarden, never in a settings file.
-node ~/Documents/Claude/Projects/cartographie-it/bw-get.mjs \
+node ~/path/to/vault-tools/bw-get.mjs \
   --item "Pexels — API" --field PEXELS_API_KEY --as PEXELS_API_KEY \
   --exec 'node bin/photos.mjs --slug <deck> --palette ref-10-campaign-board-red --n 4 \
     --query "empty office golden hour" --query "hands on keyboard"'

@@ -690,7 +690,7 @@ function cmdRoadmapLaunch(root, cfg, flags) {
     // s'authentifie couramment par un `CLAUDE_CODE_OAUTH_TOKEN` de longue durée, rangé dans un
     // `.env` que les crons sourcent : `~/.claude/.credentials.json` n'y existe alors PAS, et la
     // sonde déclarait « NON authentifié » une machine qui répondait `PONG` à un vrai aller-retour
-    // (mesuré le 03/09/2026 sur le VPS b-capital, quatrième piège de portabilité de la famille
+    // (mesuré le 03/09/2026 sur un VPS distant, quatrième piège de portabilité de la famille
     // `setsid` / `/proc` / trousseau macOS). On lit donc AUSSI ce jeton — et on le SOURCE, parce
     // qu'il ne suffit pas de le constater : les sessions détachées héritent de cet environnement,
     // sans quoi la chaîne partirait sans identité et `claude -p` refuserait avec le CODE 0.
